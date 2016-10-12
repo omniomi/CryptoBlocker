@@ -147,7 +147,7 @@ ForEach ($group in $fileGroups) {
 Write-Host "Adding/replacing File Screen Template [$fileTemplateName] with Event Notification [$eventConfFilename] and Command Notification [$cmdConfFilename].."
 &filescrn.exe Template Delete /Template:$fileTemplateName /Quiet
 # Build the argument list with all required fileGroups
-$screenArgs = 'Template','Add',"/Template:$fileTemplateName"
+$screenArgs = 'Template','Add',"/Template:$fileTemplateName","/Type:Passive"
 ForEach ($group in $fileGroups) {
     $screenArgs += "/Add-Filegroup:$($group.fileGroupName)"
 }
