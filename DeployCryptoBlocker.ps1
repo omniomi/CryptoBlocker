@@ -9,8 +9,8 @@ function ConvertFrom-Json20([Object] $obj)
     return ,$serializer.DeserializeObject($obj)
 }
 
-Function New-CBArraySplit {
-
+Function New-CBArraySplit 
+{
     param(
         $extArr,
         $depth = 1
@@ -50,7 +50,31 @@ Function New-CBArraySplit {
     }
 }
 
-################################ Functions ################################
+###########################################################################
+# Configure Email
+
+$SMTPServer = "127.0.0.1" #Change to your SMTP Server
+$AdminEmails = "example@example.com" #Comma Seperated
+$ServerFrom = "fsrm@example.com"
+
+Function AddSMTP
+{
+    filescrn.exe admin options /smtp:$SMTPServer /from:$ServerFrom /adminemails:$AdminEmails
+}
+
+# Create notification file.
+
+$EmailTo = "example@example.com"
+$EmailFrom = "cryptowatch@example.com"
+$Subject = "CrytoWatch: Unauthorized file from the [Violated File Group] file group detected"
+$Message = "User [Source Io Owner] has saved or created [Source File Path] to [File Screen Path] on [Server]. This file is in the [Violated File Group] file group."
+
+$CryptoConf = "Notification=m`nTo=$EmailTo`nFrom=$EmailFrom`nSubject=$Subject`nMessage=$Message"
+
+New-Item C:\scripts\cryptoconf.ini -type file -Value $CryptoConf -Force
+
+
+###########################################################################
 
 # Add to all drives
 $drivesContainingShares = Get-WmiObject Win32_Share | Select Name,Path,Type | Where-Object { $_.Type -eq 0 } | Select -ExpandProperty Path | % { "$((Get-Item -ErrorAction SilentlyContinue $_).Root)" } | Select -Unique
@@ -60,12 +84,12 @@ if ($drivesContainingShares -eq $null -or $drivesContainingShares.Length -eq 0)
     exit
 }
 
-Write-Host "The following shares needing to be protected: $($drivesContainingShares -Join ",")"
+Write-Host "The following shares are needing to be protected: $($drivesContainingShares -Join ",")"
 
 $majorVer = [System.Environment]::OSVersion.Version.Major
 $minorVer = [System.Environment]::OSVersion.Version.Minor
 
-Write-Host "Checking File Server Resource Manager.."
+Write-Host "Checking for File Server Resource Manager.."
 
 Import-Module ServerManager
 
@@ -95,7 +119,7 @@ if ($majorVer -ge 6)
 else
 {
     # Assume Server 2003
-    Write-Host "Other version of Windows detected! Quitting.."
+    Write-Host "This version of Windows is not supported. Quitting."
     return
 }
 
@@ -134,5 +158,7 @@ Write-Host "Adding/replacing File Screens.."
 $drivesContainingShares | % {
     Write-Host "`tAdding/replacing File Screen for [$_] with Source Template [$fileTemplateName].."
     &filescrn.exe Screen Delete "/Path:$_" /Quiet
-    &filescrn.exe Screen Add "/Path:$_" "/SourceTemplate:$fileTemplateName"
+    &filescrn.exe Screen Add "/Path:$_" "/SourceTemplate:$fileTemplateName" "/Add-Notification:m,C:\Scripts\cryptoconf.ini"
 }
+
+AddSMTP
